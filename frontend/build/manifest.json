@@ -1,0 +1,6 @@
+{
+  "short_name": "Workflow Capture & Replay",
+  "name": "Workflow Capture & Replay",
+  "start_url": ".",
+  "display": "standalone"
+}
