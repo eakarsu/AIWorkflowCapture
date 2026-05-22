@@ -79,6 +79,74 @@ export const getUnreadNotifications = () => request('/notifications/unread');
 export const markNotificationRead = (id) => request(`/notifications/${id}/read`, { method: 'POST' });
 export const markAllNotificationsRead = () => request('/notifications/mark-all-read', { method: 'POST' });
 
+// Pass 7 AI features
+export const aiDemoToSop = (body) => request('/ai/demo-to-sop', { method: 'POST', body: JSON.stringify(body || {}) });
+export const aiActionClassifier = (body) => request('/ai/action-classifier', { method: 'POST', body: JSON.stringify(body || {}) });
+export const aiAutomationScriptGen = (body) => request('/ai/automation-script-gen', { method: 'POST', body: JSON.stringify(body || {}) });
+export const aiGapFiller = (body) => request('/ai/gap-filler', { method: 'POST', body: JSON.stringify(body || {}) });
+export const aiNarrateStep = (body) => request('/ai/narrate-step', { method: 'POST', body: JSON.stringify(body || {}) });
+export const aiDedupWorkflows = (body) => request('/ai/dedup-workflows', { method: 'POST', body: JSON.stringify(body || {}) });
+export const aiContinuousImprovement = (body) => request('/ai/continuous-improvement', { method: 'POST', body: JSON.stringify(body || {}) });
+
+// Pass 7 — recording substrate
+export const recordingsApi = {
+  listSessions: () => request('/recordings/sessions'),
+  getSession: (id) => request(`/recordings/sessions/${id}`),
+  createSession: (d) => request('/recordings/sessions', { method: 'POST', body: JSON.stringify(d) }),
+  updateSession: (id, d) => request(`/recordings/sessions/${id}`, { method: 'PUT', body: JSON.stringify(d) }),
+  stopSession: (id) => request(`/recordings/sessions/${id}/stop`, { method: 'POST' }),
+  removeSession: (id) => request(`/recordings/sessions/${id}`, { method: 'DELETE' }),
+  listFrames: (id) => request(`/recordings/sessions/${id}/frames`),
+  addFrame: (id, d) => request(`/recordings/sessions/${id}/frames`, { method: 'POST', body: JSON.stringify(d) }),
+  listEvents: (id) => request(`/recordings/sessions/${id}/events`),
+  addEvent: (id, d) => request(`/recordings/sessions/${id}/events`, { method: 'POST', body: JSON.stringify(d) }),
+  bulkEvents: (id, events) => request(`/recordings/sessions/${id}/events/bulk`, { method: 'POST', body: JSON.stringify({ events }) }),
+};
+
+// Pass 7 — scopes
+export const permissionsApi = {
+  list: () => request('/permissions'),
+  me: () => request('/permissions/me'),
+  create: (d) => request('/permissions', { method: 'POST', body: JSON.stringify(d) }),
+  update: (id, d) => request(`/permissions/${id}`, { method: 'PUT', body: JSON.stringify(d) }),
+  remove: (id) => request(`/permissions/${id}`, { method: 'DELETE' }),
+  check: (user_email, workflow_name) => request(`/permissions/check?user_email=${encodeURIComponent(user_email)}&workflow_name=${encodeURIComponent(workflow_name)}`),
+};
+
+// Pass 7 — audit log
+export const auditApi = {
+  list: (filters = {}) => {
+    const qs = new URLSearchParams(filters).toString();
+    return request(`/audit-log${qs ? `?${qs}` : ''}`);
+  },
+  create: (d) => request('/audit-log', { method: 'POST', body: JSON.stringify(d) }),
+  summary: () => request('/audit-log/summary'),
+};
+
+// Pass 7 — redaction engine
+export const redactionApi = {
+  apply: (text, scope, rules) => request('/redaction/apply', { method: 'POST', body: JSON.stringify({ text, scope, rules }) }),
+  previewStep: (id, rules) => request(`/redaction/preview-step/${id}`, { method: 'POST', body: JSON.stringify({ rules }) }),
+  scanCorpus: (rules) => request('/redaction/scan-corpus', { method: 'POST', body: JSON.stringify({ rules }) }),
+};
+
+// Pass 7 — marketplace
+export const marketplaceApi = {
+  listListings: (category) => request(`/marketplace/listings${category ? `?category=${encodeURIComponent(category)}` : ''}`),
+  getListing: (id) => request(`/marketplace/listings/${id}`),
+  create: (d) => request('/marketplace/listings', { method: 'POST', body: JSON.stringify(d) }),
+  update: (id, d) => request(`/marketplace/listings/${id}`, { method: 'PUT', body: JSON.stringify(d) }),
+  remove: (id) => request(`/marketplace/listings/${id}`, { method: 'DELETE' }),
+  install: (id) => request(`/marketplace/listings/${id}/install`, { method: 'POST' }),
+  addReview: (id, d) => request(`/marketplace/listings/${id}/reviews`, { method: 'POST', body: JSON.stringify(d) }),
+};
+
+// Pass 7 — improvement / role view
+export const improvementApi = {
+  roleDashboard: (role) => request(`/improvement/role-dashboard${role ? `?role=${encodeURIComponent(role)}` : ''}`),
+  declining: () => request('/improvement/declining'),
+};
+
 export const webhooksApi = {
   list: () => request('/webhooks'),
   create: (d) => request('/webhooks', { method: 'POST', body: JSON.stringify(d) }),

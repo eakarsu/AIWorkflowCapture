@@ -20,11 +20,24 @@ const AI_LINKS = [
   { to: '/ai/branch-detector', label: 'AI · Branch Detector' },
   { to: '/ai/exception-resolver', label: 'AI · Exception Resolver' },
   { to: '/ai/workflow-merger', label: 'AI · Workflow Merger' },
+  { to: '/ai/demo-to-sop', label: 'AI · Demo-to-SOP' },
+  { to: '/ai/action-classifier', label: 'AI · Action Classifier' },
+  { to: '/ai/automation-script-gen', label: 'AI · Script Generator' },
+  { to: '/ai/gap-filler', label: 'AI · Gap Filler' },
+  { to: '/ai/narrate-step', label: 'AI · Narrate Step' },
+  { to: '/ai/dedup-workflows', label: 'AI · Dedup Workflows' },
+  { to: '/ai/continuous-improvement', label: 'AI · Continuous Improvement' },
 ];
 
 const CUSTOM_LINKS = [
   { to: '/wb/workflow-library', label: 'Workflow Library' },
   { to: '/custom-views', label: 'Capture Views' },
+  { to: '/recordings', label: 'Recording Sessions' },
+  { to: '/permissions', label: 'Permission Scopes' },
+  { to: '/audit-log', label: 'Audit Trail' },
+  { to: '/redaction', label: 'Redaction Engine' },
+  { to: '/marketplace', label: 'Marketplace' },
+  { to: '/role-dashboard', label: 'Role Dashboard' },
 ];
 
 export default function Sidebar() {

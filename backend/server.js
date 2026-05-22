@@ -40,6 +40,15 @@ app.use('/api', require('./routes/workflowExtras'));
 // Custom Views — mounted BEFORE the 404 fallback below
 app.use('/api/custom-views', require('./routes/customViews'));
 
+// Pass 7 — recording substrate + scopes + audit + redaction engine + marketplace + improvement.
+// All mounted BEFORE the 404 fallback.
+app.use('/api/recordings', require('./routes/recordings'));
+app.use('/api/permissions', require('./routes/permissions'));
+app.use('/api/audit-log', require('./routes/auditLog'));
+app.use('/api/redaction', require('./routes/redactionEngine'));
+app.use('/api/marketplace', require('./routes/marketplace'));
+app.use('/api/improvement', require('./routes/improvement'));
+
 // 404 fallback for unknown API paths
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not Found', path: req.originalUrl }));
 
