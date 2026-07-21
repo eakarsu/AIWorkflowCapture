@@ -1,44 +1,50 @@
-#!/bin/bash
-set -e
-BLUE='\033[0;34m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
-echo -e "${BLUE}== Workflow Capture & Replay ==${NC}"
-if [ -f .env ]; then export $(grep -v '^#' .env | xargs); fi
-BACKEND_PORT=${BACKEND_PORT:-4053}
-FRONTEND_PORT=${FRONTEND_PORT:-4052}
-DB_NAME=${DB_NAME:-workflow_capture}
-DB_USER=${DB_USER:-postgres}
-echo -e "${YELLOW}Cleaning ports...${NC}"
-lsof -ti:$BACKEND_PORT 2>/dev/null | xargs kill -9 2>/dev/null || true
-lsof -ti:$FRONTEND_PORT 2>/dev/null | xargs kill -9 2>/dev/null || true
-echo -e "${YELLOW}Checking PostgreSQL...${NC}"
-if ! pg_isready -h ${DB_HOST:-localhost} -p ${DB_PORT:-5432} > /dev/null 2>&1; then
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    brew services start postgresql@14 2>/dev/null || brew services start postgresql 2>/dev/null || true
-    sleep 2
-  fi
+#!/usr/bin/env bash
+set -euo pipefail
+
+launch_dir="$(cd "$(dirname "$0")" && pwd)"
+project_dir="$launch_dir"
+if [[ "${NODE_ENV:-}" == test && -n "${RUNTIME_PROJECT_SOURCE:-}" && -d "$RUNTIME_PROJECT_SOURCE" ]]; then project_dir="$(cd "$RUNTIME_PROJECT_SOURCE" && pwd)"; fi
+if [[ ! -f "$launch_dir/.env" ]]; then
+  echo "Missing $launch_dir/.env; copy .env.example and provide real values." >&2
+  exit 1
 fi
-echo -e "${GREEN}✓ Postgres ok${NC}"
-psql -h ${DB_HOST:-localhost} -U $DB_USER -tc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" 2>/dev/null | grep -q 1 || \
-  createdb -h ${DB_HOST:-localhost} -U $DB_USER $DB_NAME 2>/dev/null || true
-echo -e "${GREEN}✓ DB ready ($DB_NAME)${NC}"
-cd backend && [ -d node_modules ] || npm install --silent 2>&1 | tail -3
-cd ..
-cd frontend && [ -d node_modules ] || npm install --silent 2>&1 | tail -3
-cd ..
-(cd backend && node seed/seed.js) || true
-echo -e "${GREEN}✓ Seeded${NC}"
-echo -e "${BLUE}Backend on $BACKEND_PORT, Frontend on $FRONTEND_PORT${NC}"
-(cd backend && npx --yes nodemon server.js) &
-BACKEND_PID=$!
-sleep 2
-(cd frontend && BROWSER=none PORT=$FRONTEND_PORT npm start) &
-FRONTEND_PID=$!
-cleanup() {
-  kill $BACKEND_PID 2>/dev/null || true
-  kill $FRONTEND_PID 2>/dev/null || true
-  lsof -ti:$BACKEND_PORT 2>/dev/null | xargs kill -9 2>/dev/null || true
-  lsof -ti:$FRONTEND_PORT 2>/dev/null | xargs kill -9 2>/dev/null || true
-  exit 0
+
+load_env_file() {
+  local file="$1" line key value
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"; case "$line" in ''|'#'*) continue ;; esac; line="${line#export }"
+    key="${line%%=*}"; value="${line#*=}"; [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+    if [[ "$value" == \"*\" && "$value" == *\" ]] || [[ "$value" == \'*\' && "$value" == *\' ]]; then value="${value:1:${#value}-2}"; fi
+    if [[ -z "${!key+x}" ]]; then printf -v "$key" '%s' "$value"; export "$key"; fi
+  done < "$file"
 }
-trap cleanup SIGINT SIGTERM
-wait
+load_env_file "$launch_dir/.env"
+
+backend_port="${BACKEND_PORT:-${PORT:-4053}}"
+frontend_port="${FRONTEND_PORT:-4052}"
+for dependency_dir in "$project_dir/backend/node_modules"; do
+  if [[ ! -d "$dependency_dir" ]]; then
+    echo "Missing $dependency_dir; install dependencies explicitly before starting." >&2
+    exit 1
+  fi
+done
+if [[ "${NODE_ENV:-}" != test && ! -d "$project_dir/frontend/node_modules" ]]; then echo "Missing frontend dependencies; install them explicitly before starting." >&2; exit 1; fi
+for port in "$backend_port" "$frontend_port"; do
+  if command -v lsof >/dev/null && lsof -tiTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then echo "Port $port is already in use." >&2; exit 1; fi
+done
+
+(cd "$project_dir/backend" && BACKEND_PORT="$backend_port" CORS_ORIGINS="${CORS_ORIGINS:-http://127.0.0.1:$frontend_port}" node server.js) &
+backend_pid=$!
+frontend_pid=""
+if [[ "${NODE_ENV:-}" != test ]]; then
+  (cd "$project_dir/frontend" && HOST=127.0.0.1 PORT="$frontend_port" REACT_APP_API_BASE="${REACT_APP_API_BASE:-http://127.0.0.1:$backend_port/api}" BROWSER=none npm start) &
+  frontend_pid=$!
+fi
+
+cleanup() {
+  trap - EXIT INT TERM
+  kill "$backend_pid" ${frontend_pid:+"$frontend_pid"} 2>/dev/null || true
+  wait "$backend_pid" ${frontend_pid:+"$frontend_pid"} 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+if [[ -z "$frontend_pid" ]]; then wait "$backend_pid"; else while kill -0 "$backend_pid" 2>/dev/null && kill -0 "$frontend_pid" 2>/dev/null; do sleep 1; done; fi

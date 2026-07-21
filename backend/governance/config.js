@@ -1,0 +1,30 @@
+module.exports={
+  caseType:'approved_workflow_replay',initialState:'capture_requested',
+  states:['capture_requested','capture_authorized','redaction_verified','events_captured','graph_compiled','dry_run_completed','repair_required','replay_review','replay_approved','execution_observed','execution_failed','rollback_verified','retention_dispositioned','deleted'],
+  createRoles:['workflow_author','automation_manager'],assessmentRoles:['workflow_author','privacy_reviewer','automation_reviewer'],auditRoles:['automation_manager','privacy_officer','auditor'],connectorRoles:['automation_operator','automation_manager'],
+  evidenceKinds:['consent_record','application_allowlist','pause_event','redaction_receipt','capture_manifest','event_digest','workflow_graph_version','selector_manifest','precondition_manifest','branch_manifest','dry_run_report','ui_change_report','repair_patch','review_approval','execution_receipt','failure_record','rollback_record','retention_record','deletion_receipt'],
+  requiredSignals:['consentVersion','allowlistVersion','redactionPolicyVersion','policyVersion','graphVersion','targetVersion','dryRunSuccessRate','selectorResolutionRate','secretLeakCount','piiLeakCount','timeoutRate','rollbackVerified','repairStatus'],
+  professionalBoundary:'Capture and replay require active consent, visible pause controls, application allowlists, immediate redaction, dry run, and independent approval. The API never controls a desktop or browser.',
+  connectors:[{name:'desktop_capture',purpose:'consented allowlisted event manifests'},{name:'browser_capture',purpose:'consented browser event manifests'},{name:'encrypted_object_store',purpose:'encrypted artifacts and deletion receipts'},{name:'automation_runtime',purpose:'dry-run, replay, timeout, and rollback receipts'},{name:'identity',purpose:'tenant membership and consent status'},{name:'secrets_vault',purpose:'opaque secret references only'},{name:'ticketing',purpose:'repair work and exception status'},{name:'notification',purpose:'approved replay and retention notices'}],
+  transitions:[
+    {from:'capture_requested',action:'authorize_capture',to:'capture_authorized',roles:['privacy_reviewer','workflow_author'],requiresEvidence:true,dualControl:true},
+    {from:'capture_authorized',action:'verify_redaction',to:'redaction_verified',roles:['privacy_reviewer'],requiresEvidence:true,dualControl:true},
+    {from:'redaction_verified',action:'record_capture',to:'events_captured',roles:['workflow_author','automation_operator'],requiresEvidence:true},
+    {from:'events_captured',action:'compile_graph',to:'graph_compiled',roles:['workflow_author'],requiresEvidence:true},
+    {from:'graph_compiled',action:'record_dry_run',to:'dry_run_completed',roles:['automation_operator','automation_reviewer'],requiresEvidence:true},
+    {from:'dry_run_completed',action:'request_repair',to:'repair_required',roles:['automation_reviewer'],requiresEvidence:true},
+    {from:'repair_required',action:'record_repair',to:'graph_compiled',roles:['workflow_author'],requiresEvidence:true},
+    {from:'dry_run_completed',action:'submit_replay_review',to:'replay_review',roles:['automation_reviewer','privacy_reviewer'],requiresEvidence:true,dualControl:true},
+    {from:'replay_review',action:'approve_replay_observation',to:'replay_approved',roles:['automation_manager','privacy_reviewer'],requiresEvidence:true,dualControl:true},
+    {from:'replay_approved',action:'record_execution',to:'execution_observed',roles:['automation_operator','automation_manager'],requiresEvidence:true},
+    {from:'replay_approved',action:'record_failure',to:'execution_failed',roles:['automation_operator','automation_manager'],requiresEvidence:true},
+    {from:'execution_failed',action:'verify_rollback',to:'rollback_verified',roles:['automation_reviewer','automation_manager'],requiresEvidence:true,dualControl:true},
+    {from:'execution_observed',action:'record_retention_disposition',to:'retention_dispositioned',roles:['privacy_officer','automation_manager'],requiresEvidence:true,dualControl:true},
+    {from:'rollback_verified',action:'record_retention_disposition',to:'retention_dispositioned',roles:['privacy_officer','automation_manager'],requiresEvidence:true,dualControl:true},
+    {from:'retention_dispositioned',action:'verify_deletion',to:'deleted',roles:['privacy_officer','auditor'],requiresEvidence:true,dualControl:true}
+  ],
+  acceptedFixture:{consentVersion:'c1',allowlistVersion:'a1',redactionPolicyVersion:'r1',policyVersion:'p1',graphVersion:'g1',targetVersion:'t1',dryRunSuccessRate:0.99,selectorResolutionRate:0.99,secretLeakCount:0,piiLeakCount:0,timeoutRate:0.01,rollbackVerified:true,repairStatus:'not_required'},
+  rejectedFixture:{consentVersion:'c1',allowlistVersion:'a1',redactionPolicyVersion:'r1',policyVersion:'p1',graphVersion:'g1',targetVersion:'t1',dryRunSuccessRate:0.99,selectorResolutionRate:0.99,secretLeakCount:1,piiLeakCount:0,timeoutRate:0.01,rollbackVerified:true,repairStatus:'not_required'},
+  readyDisposition:'independent_replay_review_required',holdDisposition:'consent_redaction_repair_or_reliability_hold',decisionField:'replayCommand',
+  assess:x=>{const success=Number(x.dryRunSuccessRate),selectors=Number(x.selectorResolutionRate),secrets=Number(x.secretLeakCount),pii=Number(x.piiLeakCount),timeouts=Number(x.timeoutRate);const ready=success>=0.98&&selectors>=0.98&&secrets===0&&pii===0&&timeouts<=0.02&&x.rollbackVerified===true&&x.repairStatus==='not_required';return{disposition:ready?'independent_replay_review_required':'consent_redaction_repair_or_reliability_hold',replayCommand:null,inputCommand:null,metrics:{success,selectors,secrets,pii,timeouts},versions:{consent:x.consentVersion,allowlist:x.allowlistVersion,redaction:x.redactionPolicyVersion,graph:x.graphVersion,target:x.targetVersion}};}
+};

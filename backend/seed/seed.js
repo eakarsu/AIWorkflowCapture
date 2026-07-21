@@ -1,6 +1,17 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('node:crypto');
 const pool = require('../config/database');
+
+if (process.env.NODE_ENV === 'production' || process.env.ALLOW_DEMO_SEED !== 'true') {
+  throw new Error('Demo seed is disabled; set ALLOW_DEMO_SEED=true only for an isolated non-production database.');
+}
+const demoPassword = String(process.env.DEMO_PASSWORD || '');
+if (demoPassword.length < 12) throw new Error('DEMO_PASSWORD must contain at least 12 characters.');
+const demoEmail = String(process.env.DEMO_EMAIL || process.env.ADMIN_EMAIL || '');
+if (!demoEmail) throw new Error('DEMO_EMAIL is required.');
+const demoSalt = crypto.randomBytes(16);
+const demoPasswordHash = `scrypt$${demoSalt.toString('hex')}$${crypto.scryptSync(demoPassword, demoSalt, 64).toString('hex')}`;
 
 async function main() {
   const migDir = path.join(__dirname, '..', 'migrations');
@@ -10,7 +21,8 @@ async function main() {
     catch (e) { console.warn(`[seed] ${f} warn: ${e.message}`); }
   }
   await pool.query(
-    "INSERT INTO users (email, password, name, role) VALUES ('admin@workflow-capture.local','secure123','Admin','commander') ON CONFLICT (email) DO NOTHING"
+    'INSERT INTO users (email, password, name, role) VALUES ($1,$2,$3,$4) ON CONFLICT (email) DO UPDATE SET password=EXCLUDED.password, name=EXCLUDED.name, role=EXCLUDED.role',
+    [demoEmail.toLowerCase(), demoPasswordHash, process.env.BOOTSTRAP_ADMIN_NAME || 'Admin', 'commander']
   );
   console.log('[seed] demo user ready');
 

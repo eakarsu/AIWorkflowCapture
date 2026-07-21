@@ -35,7 +35,7 @@ export default function LoginPage() {
         <button className="btn" type="submit" disabled={busy} style={{ width: '100%', marginTop: 10 }}>
           {busy ? 'Signing in...' : 'Sign In'}
         </button>
-        <p className="login-hint">demo: <code>admin@workflow-capture.local</code> / <code>secure123</code></p>
+        <p className="login-hint">Use the administrator identity provisioned for this environment.</p>
       </form>
     </div>
   );

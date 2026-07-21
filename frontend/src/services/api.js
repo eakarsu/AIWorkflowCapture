@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:4053/api';
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:4053/api';
 const TOKEN_KEY = 'workflow_capture_token';
 const USER_KEY = 'workflow_capture_user';
 

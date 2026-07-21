@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
-const JWT_SECRET = process.env.JWT_SECRET || 'workflow_capture-secret-2026';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const authenticateToken = (req, res, next) => {
   const h = req.headers['authorization'];

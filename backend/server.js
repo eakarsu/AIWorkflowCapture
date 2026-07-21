@@ -1,55 +1,55 @@
+const path = require('node:path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+const { validateRuntime } = require('./governance/runtime');
+validateRuntime();
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
-
 const { authenticateToken } = require('./middleware/auth');
+const { createProviderGate } = require('./governance/providerGate');
 
 const app = express();
-const PORT = process.env.BACKEND_PORT || 4053;
+const port = Number(process.env.BACKEND_PORT || 4053);
+const origins = String(process.env.CORS_ORIGINS || process.env.ALLOWED_ORIGINS || 'http://localhost:4052')
+  .split(',').map((value) => value.trim()).filter(Boolean);
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:4052').split(',').map((o) => o.trim()).filter(Boolean);
-app.use(cors({ origin: (origin, cb) => (!origin || allowedOrigins.includes(origin) ? cb(null, true) : cb(new Error('cors'))), credentials: true }));
-app.use(express.json({ limit: '20mb' }));
-app.use(express.urlencoded({ extended: true, limit: '20mb' }));
+app.use(cors({ origin(origin, callback) {
+  if (!origin || origins.includes(origin)) return callback(null, true);
+  return callback(new Error('Origin is not allowed by CORS.'));
+}, credentials: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'AIWorkflowCapture', timestamp: new Date().toISOString() }));
-
+app.get('/api/health', (_req, res) => res.json({ status: 'ok', service: 'AIWorkflowCapture', timestamp: new Date().toISOString() }));
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/governance', require('./governance/router'));
+
 app.use('/api', authenticateToken);
+const providerGate = createProviderGate(['/api/workflows','/api/captured-steps','/api/replay-runs','/api/selector-library','/api/healing-events','/api/exceptions','/api/ai','/api/recordings','/api/redaction','/api/marketplace','/api/improvement']);
+app.use(providerGate);
+if (process.env.ENABLE_LEGACY_PROVIDER_ROUTES === 'true' && process.env.NODE_ENV !== 'production') {
+  const routes = [
+    ['/api/workflows','./routes/Workflows'],['/api/captured-steps','./routes/CapturedSteps'],
+    ['/api/replay-runs','./routes/ReplayRuns'],['/api/selector-library','./routes/SelectorLibrary'],
+    ['/api/healing-events','./routes/HealingEvents'],['/api/exceptions','./routes/Exceptions'],
+    ['/api/ai','./routes/ai'],['/api/notifications','./routes/notifications'],
+    ['/api/attachments','./routes/attachments'],['/api/webhooks','./routes/webhooks'],
+    ['/api/dashboard','./routes/dashboard'],['/api/custom-views','./routes/customViews'],
+    ['/api/recordings','./routes/recordings'],['/api/permissions','./routes/permissions'],
+    ['/api/audit-log','./routes/auditLog'],['/api/redaction','./routes/redactionEngine'],
+    ['/api/marketplace','./routes/marketplace'],['/api/improvement','./routes/improvement'],
+    ['/api','./routes/workflowExtras']
+  ];
+  for (const [mount, modulePath] of routes) app.use(mount, require(modulePath));
+}
 
-// CRUD entities
-app.use('/api/workflows', require('./routes/Workflows'));
-app.use('/api/captured-steps', require('./routes/CapturedSteps'));
-app.use('/api/replay-runs', require('./routes/ReplayRuns'));
-app.use('/api/selector-library', require('./routes/SelectorLibrary'));
-app.use('/api/healing-events', require('./routes/HealingEvents'));
-app.use('/api/exceptions', require('./routes/Exceptions'));
+app.use((_req, res) => res.status(404).json({ error: 'Route not found' }));
+app.use((error, _req, res, _next) => res.status(error.status || 500).json({ error: error.status ? error.message : 'Internal server error' }));
 
-// AI + cross-cutting
-app.use('/api/ai', require('./routes/ai'));
-app.use('/api/notifications', require('./routes/notifications'));
-app.use('/api/attachments', require('./routes/attachments'));
-app.use('/api/webhooks', require('./routes/webhooks'));
-app.use('/api/dashboard', require('./routes/dashboard'));
-
-app.use('/api', require('./routes/workflowExtras'));
-
-// Custom Views — mounted BEFORE the 404 fallback below
-app.use('/api/custom-views', require('./routes/customViews'));
-
-// Pass 7 — recording substrate + scopes + audit + redaction engine + marketplace + improvement.
-// All mounted BEFORE the 404 fallback.
-app.use('/api/recordings', require('./routes/recordings'));
-app.use('/api/permissions', require('./routes/permissions'));
-app.use('/api/audit-log', require('./routes/auditLog'));
-app.use('/api/redaction', require('./routes/redactionEngine'));
-app.use('/api/marketplace', require('./routes/marketplace'));
-app.use('/api/improvement', require('./routes/improvement'));
-
-// 404 fallback for unknown API paths
-app.use('/api', (req, res) => res.status(404).json({ error: 'Not Found', path: req.originalUrl }));
-
-app.listen(PORT, () => console.log(`\nWorkflow Capture & Replay API on http://localhost:${PORT}\n`));
+function start() {
+  return app.listen(port, () => console.log(`Workflow Capture API listening on ${port}`));
+}
+if (require.main === module) start();
+module.exports = { app, start };
