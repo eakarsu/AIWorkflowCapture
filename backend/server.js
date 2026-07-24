@@ -27,6 +27,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/governance', require('./governance/router'));
 
 app.use('/api', authenticateToken);
+app.use('/api/runtime-ai', require('./routes/runtimeAi'));
 const providerGate = createProviderGate(['/api/workflows','/api/captured-steps','/api/replay-runs','/api/selector-library','/api/healing-events','/api/exceptions','/api/ai','/api/recordings','/api/redaction','/api/marketplace','/api/improvement']);
 app.use(providerGate);
 if (process.env.ENABLE_LEGACY_PROVIDER_ROUTES === 'true' && process.env.NODE_ENV !== 'production') {

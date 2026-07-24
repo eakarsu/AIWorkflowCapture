@@ -22,6 +22,13 @@ load_env_file "$launch_dir/.env"
 
 backend_port="${BACKEND_PORT:-${PORT:-4053}}"
 frontend_port="${FRONTEND_PORT:-4052}"
+[[ "$backend_port" != "$frontend_port" ]] || { echo "Backend and frontend ports must differ." >&2; exit 1; }
+: "${DATABASE_URL:?DATABASE_URL is required}"
+: "${JWT_SECRET:?JWT_SECRET is required}"
+: "${OPENROUTER_API_KEY:?OPENROUTER_API_KEY is required}"
+: "${OPENROUTER_MODEL:?OPENROUTER_MODEL is required}"
+[[ "${OPENROUTER_BASE_URL:-}" == "https://openrouter.ai/api/v1" ]] || { echo "OPENROUTER_BASE_URL must be https://openrouter.ai/api/v1." >&2; exit 1; }
+[[ "${ALLOW_SCHEMA_MIGRATION:-}" == true ]] || { echo "ALLOW_SCHEMA_MIGRATION=true is required." >&2; exit 1; }
 for dependency_dir in "$project_dir/backend/node_modules"; do
   if [[ ! -d "$dependency_dir" ]]; then
     echo "Missing $dependency_dir; install dependencies explicitly before starting." >&2
@@ -30,8 +37,10 @@ for dependency_dir in "$project_dir/backend/node_modules"; do
 done
 if [[ "${NODE_ENV:-}" != test && ! -d "$project_dir/frontend/node_modules" ]]; then echo "Missing frontend dependencies; install them explicitly before starting." >&2; exit 1; fi
 for port in "$backend_port" "$frontend_port"; do
-  if command -v lsof >/dev/null && lsof -tiTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then echo "Port $port is already in use." >&2; exit 1; fi
+  if command -v lsof >/dev/null && lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then echo "Port $port is already in use; no process was changed." >&2; exit 1; fi
 done
+
+(cd "$project_dir/backend" && node scripts/prepare-runtime.js)
 
 (cd "$project_dir/backend" && BACKEND_PORT="$backend_port" CORS_ORIGINS="${CORS_ORIGINS:-http://127.0.0.1:$frontend_port}" node server.js) &
 backend_pid=$!
