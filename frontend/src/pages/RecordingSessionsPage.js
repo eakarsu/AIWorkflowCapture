@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { recordingsApi, canWrite } from '../services/api';
+import { recordingsApi, canWrite, recordRows } from '../services/api';
 
 export default function RecordingSessionsPage() {
   const writer = canWrite();
@@ -16,7 +16,7 @@ export default function RecordingSessionsPage() {
     setLoading(true); setErr(null);
     try {
       const list = await recordingsApi.listSessions();
-      setSessions(list);
+      setSessions(recordRows(list, 'Recording sessions'));
     } catch (e) { setErr(e.message); }
     finally { setLoading(false); }
   }
@@ -26,7 +26,7 @@ export default function RecordingSessionsPage() {
     setSelected(id);
     try {
       const [f, ev] = await Promise.all([recordingsApi.listFrames(id), recordingsApi.listEvents(id)]);
-      setFrames(f); setEvents(ev);
+      setFrames(recordRows(f, 'Frames')); setEvents(recordRows(ev, 'Events'));
     } catch (e) { setErr(e.message); }
   }
 
@@ -58,7 +58,7 @@ export default function RecordingSessionsPage() {
       await recordingsApi.addEvent(selected, eventDraft);
       setEventDraft({ seq: (eventDraft.seq || 0) + 1, kind: 'click', target_selector: '', value: '' });
       const ev = await recordingsApi.listEvents(selected);
-      setEvents(ev);
+      setEvents(recordRows(ev, 'Events'));
     } catch (e) { setErr(e.message); }
   }
 

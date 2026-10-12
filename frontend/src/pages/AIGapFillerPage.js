@@ -12,7 +12,7 @@ export default function AIGapFillerPage() {
         { key: 'workflow_name', label: 'Workflow', type: 'text' },
         { key: 'steps_text', label: 'Captured steps with gaps', type: 'textarea' },
       ]}
-      run={(v) => aiGapFiller(v)}
+      run={(v, requestOptions) => aiGapFiller(v, requestOptions)}
     />
   );
 }

@@ -15,7 +15,7 @@ export default function AIAutomationScriptGenPage() {
         { key: 'base_url', label: 'Base URL', type: 'text' },
         { key: 'steps_text', label: 'Steps (free text)', type: 'textarea' },
       ]}
-      run={(v) => aiAutomationScriptGen(v)}
+      run={(v, requestOptions) => aiAutomationScriptGen(v, requestOptions)}
     />
   );
 }

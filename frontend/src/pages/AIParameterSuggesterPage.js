@@ -12,7 +12,7 @@ export default function AIParameterSuggesterPage() {
         { key: 'workflow_name', label: 'Workflow', type: 'text', placeholder: '' },
         { key: 'partial_input', label: 'Partial Input', type: 'textarea', placeholder: '' }
       ]}
-      run={(v) => aiParameterSuggester(v)}
+      run={(v, requestOptions) => aiParameterSuggester(v, requestOptions)}
     />
   );
 }

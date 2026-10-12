@@ -14,7 +14,7 @@ export default function AINarrateStepPage() {
         { key: 'step_label', label: 'Step label', type: 'text' },
         { key: 'upcoming', label: 'Upcoming step', type: 'text' },
       ]}
-      run={(v) => aiNarrateStep(v)}
+      run={(v, requestOptions) => aiNarrateStep(v, requestOptions)}
     />
   );
 }

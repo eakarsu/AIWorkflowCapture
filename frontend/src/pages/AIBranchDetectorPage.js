@@ -12,7 +12,7 @@ export default function AIBranchDetectorPage() {
         { key: 'workflow_name', label: 'Workflow', type: 'text', placeholder: '' },
         { key: 'observation', label: 'Observation', type: 'textarea', placeholder: '' }
       ]}
-      run={(v) => aiBranchDetector(v)}
+      run={(v, requestOptions) => aiBranchDetector(v, requestOptions)}
     />
   );
 }

@@ -12,7 +12,7 @@ export default function AICaptureAnalyzePage() {
         { key: 'trace_text', label: 'Captured Trace', type: 'textarea', placeholder: '' },
         { key: 'app_name', label: 'Target App', type: 'text', placeholder: '' }
       ]}
-      run={(v) => aiCaptureAnalyze(v)}
+      run={(v, requestOptions) => aiCaptureAnalyze(v, requestOptions)}
     />
   );
 }

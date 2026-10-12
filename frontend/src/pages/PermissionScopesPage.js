@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { permissionsApi, isCommander } from '../services/api';
+import { permissionsApi, isCommander, recordRows } from '../services/api';
 
 export default function PermissionScopesPage() {
   const admin = isCommander();
@@ -10,9 +10,9 @@ export default function PermissionScopesPage() {
 
   async function refresh() {
     try {
-      const [list, mine] = await Promise.all([permissionsApi.list().catch(() => []), permissionsApi.me()]);
-      setRows(Array.isArray(list) ? list : []);
-      setMe(mine);
+      const [list, mine] = await Promise.all([permissionsApi.list(), permissionsApi.me()]);
+      setRows(recordRows(list, 'Permission scopes'));
+      setMe({ ...mine, scopes: recordRows(mine.scopes, 'My scopes') });
     } catch (e) { setErr(e.message); }
   }
   useEffect(() => { refresh(); }, []);

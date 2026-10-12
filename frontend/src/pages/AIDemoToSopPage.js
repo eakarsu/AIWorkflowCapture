@@ -13,7 +13,7 @@ export default function AIDemoToSopPage() {
         { key: 'steps_text', label: 'Steps (free text)', type: 'textarea' },
         { key: 'screenshots', label: 'Screenshot refs (comma)', type: 'text' },
       ]}
-      run={(v) => aiDemoToSop(v)}
+      run={(v, requestOptions) => aiDemoToSop(v, requestOptions)}
     />
   );
 }

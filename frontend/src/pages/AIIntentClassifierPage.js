@@ -12,7 +12,7 @@ export default function AIIntentClassifierPage() {
         { key: 'utterance', label: 'User Utterance', type: 'textarea', placeholder: '' },
         { key: 'allowed_intents', label: 'Allowed Intents (comma)', type: 'text', placeholder: 'submit_invoice, file_expense, book_port' }
       ]}
-      run={(v) => aiIntentClassifier(v)}
+      run={(v, requestOptions) => aiIntentClassifier(v, requestOptions)}
     />
   );
 }

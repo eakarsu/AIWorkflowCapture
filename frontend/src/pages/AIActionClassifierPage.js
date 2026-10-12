@@ -12,7 +12,7 @@ export default function AIActionClassifierPage() {
         { key: 'events_text', label: 'Raw event stream', type: 'textarea' },
         { key: 'app_name', label: 'Target App', type: 'text' },
       ]}
-      run={(v) => aiActionClassifier(v)}
+      run={(v, requestOptions) => aiActionClassifier(v, requestOptions)}
     />
   );
 }

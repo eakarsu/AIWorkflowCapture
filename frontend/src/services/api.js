@@ -12,11 +12,20 @@ export function getRole() { return (getStoredUser()?.role || 'viewer').toLowerCa
 export function canWrite() { return ['commander', 'analyst'].includes(getRole()); }
 export function isCommander() { return getRole() === 'commander'; }
 
+// List routes currently return arrays. Accept paginated envelopes too, while
+// surfacing malformed responses instead of presenting them as empty results.
+export function recordRows(payload, label = 'Records') {
+  if (Array.isArray(payload)) return payload;
+  if (payload && Array.isArray(payload.data)) return payload.data;
+  if (payload && Array.isArray(payload.rows)) return payload.rows;
+  throw new Error(`${label} response did not contain a record array`);
+}
+
 async function request(url, options = {}) {
   const token = getToken();
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) };
   const res = await fetch(`${API_BASE}${url}`, { ...options, headers });
-  if (res.status === 401 && !url.startsWith('/auth/login')) { logout(); throw new Error('Session expired'); }
+  if (res.status === 401 && !url.startsWith('/auth/')) { logout(); throw new Error('Session expired'); }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
   return data;
@@ -45,6 +54,7 @@ function crud(base) {
 }
 
 export const login = (email, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+export const demoLogin = () => request('/auth/demo-login', { method: 'POST' });
 export const getMe = () => request('/auth/me');
 
 export const workflowsApi = crud('workflows');
@@ -54,14 +64,14 @@ export const selector_libraryApi = crud('selector-library');
 export const healing_eventsApi = crud('healing-events');
 export const exceptionsApi = crud('exceptions');
 
-export const aiCaptureAnalyze = (body) => request('/ai/capture-analyze', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiReplayPlan = (body) => request('/ai/replay-plan', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiSelfHeal = (body) => request('/ai/self-heal', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiIntentClassifier = (body) => request('/ai/intent-classifier', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiParameterSuggester = (body) => request('/ai/parameter-suggester', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiBranchDetector = (body) => request('/ai/branch-detector', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiExceptionResolver = (body) => request('/ai/exception-resolver', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiWorkflowMerger = (body) => request('/ai/workflow-merger', { method: 'POST', body: JSON.stringify(body || {}) });
+export const aiCaptureAnalyze = (body, options = {}) => request('/ai/capture-analyze', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiReplayPlan = (body, options = {}) => request('/ai/replay-plan', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiSelfHeal = (body, options = {}) => request('/ai/self-heal', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiIntentClassifier = (body, options = {}) => request('/ai/intent-classifier', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiParameterSuggester = (body, options = {}) => request('/ai/parameter-suggester', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiBranchDetector = (body, options = {}) => request('/ai/branch-detector', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiExceptionResolver = (body, options = {}) => request('/ai/exception-resolver', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiWorkflowMerger = (body, options = {}) => request('/ai/workflow-merger', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
 
 export const getAIHistory = (feature, limit = 25) => {
   const qs = new URLSearchParams({ ...(feature ? { feature } : {}), limit: String(limit) }).toString();
@@ -80,13 +90,13 @@ export const markNotificationRead = (id) => request(`/notifications/${id}/read`,
 export const markAllNotificationsRead = () => request('/notifications/mark-all-read', { method: 'POST' });
 
 // Pass 7 AI features
-export const aiDemoToSop = (body) => request('/ai/demo-to-sop', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiActionClassifier = (body) => request('/ai/action-classifier', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiAutomationScriptGen = (body) => request('/ai/automation-script-gen', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiGapFiller = (body) => request('/ai/gap-filler', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiNarrateStep = (body) => request('/ai/narrate-step', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiDedupWorkflows = (body) => request('/ai/dedup-workflows', { method: 'POST', body: JSON.stringify(body || {}) });
-export const aiContinuousImprovement = (body) => request('/ai/continuous-improvement', { method: 'POST', body: JSON.stringify(body || {}) });
+export const aiDemoToSop = (body, options = {}) => request('/ai/demo-to-sop', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiActionClassifier = (body, options = {}) => request('/ai/action-classifier', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiAutomationScriptGen = (body, options = {}) => request('/ai/automation-script-gen', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiGapFiller = (body, options = {}) => request('/ai/gap-filler', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiNarrateStep = (body, options = {}) => request('/ai/narrate-step', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiDedupWorkflows = (body, options = {}) => request('/ai/dedup-workflows', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
+export const aiContinuousImprovement = (body, options = {}) => request('/ai/continuous-improvement', { ...options, method: 'POST', body: JSON.stringify(body || {}) });
 
 // Pass 7 — recording substrate
 export const recordingsApi = {

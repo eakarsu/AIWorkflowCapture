@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login, setToken, setStoredUser } from '../services/api';
+import { login, demoLogin, setToken, setStoredUser } from '../services/api';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('admin@workflow-capture.local');
-  const [password, setPassword] = useState('secure123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
@@ -13,6 +13,15 @@ export default function LoginPage() {
     setBusy(true); setError(null);
     try {
       const { token, user } = await login(email, password);
+      setToken(token); setStoredUser(user);
+      navigate('/');
+    } catch (err) { setError(err.message); }
+    finally { setBusy(false); }
+  };
+  const signInAsDemo = async () => {
+    setBusy(true); setError(null);
+    try {
+      const { token, user } = await demoLogin();
       setToken(token); setStoredUser(user);
       navigate('/');
     } catch (err) { setError(err.message); }
@@ -34,12 +43,12 @@ export default function LoginPage() {
         {error && <div className="ai-error">{error}</div>}
         <button
           type="button"
-          onClick={() => { setEmail(process.env.REACT_APP_DEMO_EMAIL || ''); setPassword(process.env.REACT_APP_DEMO_PASSWORD || ''); }}
-          disabled={!process.env.REACT_APP_DEMO_EMAIL || !process.env.REACT_APP_DEMO_PASSWORD}
-          aria-label="Auto Fill Demo Credentials"
+          onClick={signInAsDemo}
+          disabled={busy}
+          aria-label="Sign in as demo"
           style={{ width: '100%', marginBottom: '12px', padding: '10px 14px', borderRadius: '8px', border: '1px solid currentColor', background: 'transparent', cursor: 'pointer' }}
         >
-          Auto Fill Demo Credentials
+          Sign in as demo
         </button>
         <button className="btn" type="submit" disabled={busy} style={{ width: '100%', marginTop: 10 }}>
           {busy ? 'Signing in...' : 'Sign In'}

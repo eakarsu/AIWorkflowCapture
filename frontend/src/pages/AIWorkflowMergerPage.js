@@ -13,7 +13,7 @@ export default function AIWorkflowMergerPage() {
         { key: 'workflow_b', label: 'Workflow B', type: 'text', placeholder: '' },
         { key: 'similarity_hint', label: 'Similarity Hint', type: 'textarea', placeholder: '' }
       ]}
-      run={(v) => aiWorkflowMerger(v)}
+      run={(v, requestOptions) => aiWorkflowMerger(v, requestOptions)}
     />
   );
 }

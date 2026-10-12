@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { improvementApi, getRole } from '../services/api';
+import { improvementApi, getRole, recordRows } from '../services/api';
 
 export default function RoleDashboardPage() {
   const [role, setRole] = useState(getRole() === 'commander' ? 'manager' : 'operator');
@@ -11,7 +11,13 @@ export default function RoleDashboardPage() {
     setErr(null);
     try {
       const [d, dec] = await Promise.all([improvementApi.roleDashboard(role), improvementApi.declining()]);
-      setData(d); setDeclining(dec);
+      setData({ ...d,
+        ...(d.view === 'manager' ? { exception_trends: recordRows(d.exception_trends, 'Exception trends') } : {
+          queued_workflows: recordRows(d.queued_workflows, 'Queued workflows'),
+          open_exceptions: recordRows(d.open_exceptions, 'Open exceptions'),
+        }),
+      });
+      setDeclining({ ...dec, declining: recordRows(dec.declining, 'Declining workflows') });
     } catch (e) { setErr(e.message); }
   }
   useEffect(() => { refresh(); /* eslint-disable-next-line */ }, [role]);

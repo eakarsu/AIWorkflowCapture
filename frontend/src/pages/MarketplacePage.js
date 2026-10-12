@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { marketplaceApi, canWrite } from '../services/api';
+import { marketplaceApi, canWrite, recordRows } from '../services/api';
 
 export default function MarketplacePage() {
   const writer = canWrite();
@@ -13,14 +13,14 @@ export default function MarketplacePage() {
 
   async function refresh() {
     setErr(null);
-    try { setListings(await marketplaceApi.listListings(filter)); }
+    try { setListings(recordRows(await marketplaceApi.listListings(filter), 'Marketplace listings')); }
     catch (e) { setErr(e.message); }
   }
   useEffect(() => { refresh(); /* eslint-disable-next-line */ }, []);
 
   async function open(id) {
     setSelected(id);
-    try { setDetail(await marketplaceApi.getListing(id)); } catch (e) { setErr(e.message); }
+    try { const listing = await marketplaceApi.getListing(id); setDetail({ ...listing, reviews: recordRows(listing.reviews, 'Marketplace reviews') }); } catch (e) { setErr(e.message); }
   }
   async function install(id) {
     try { await marketplaceApi.install(id); await refresh(); if (selected === id) await open(id); }

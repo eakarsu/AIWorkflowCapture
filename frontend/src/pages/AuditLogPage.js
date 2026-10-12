@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { auditApi } from '../services/api';
+import { auditApi, recordRows } from '../services/api';
 
 export default function AuditLogPage() {
   const [rows, setRows] = useState([]);
@@ -14,8 +14,8 @@ export default function AuditLogPage() {
       if (actor) filters.actor = actor;
       if (resourceType) filters.resource_type = resourceType;
       const [list, sum] = await Promise.all([auditApi.list(filters), auditApi.summary()]);
-      setRows(Array.isArray(list) ? list : []);
-      setSummary(sum);
+      setRows(recordRows(list, 'Audit events'));
+      setSummary({ ...sum, rows: recordRows(sum.rows, 'Audit summary') });
     } catch (e) { setErr(e.message); }
   }
   useEffect(() => { refresh(); /* eslint-disable-next-line */ }, []);

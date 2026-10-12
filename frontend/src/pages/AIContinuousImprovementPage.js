@@ -12,7 +12,7 @@ export default function AIContinuousImprovementPage() {
         { key: 'window', label: 'Window (e.g. 7d, 30d, 90d)', type: 'text' },
         { key: 'runs_text', label: 'Run outcomes (free text)', type: 'textarea' },
       ]}
-      run={(v) => aiContinuousImprovement(v)}
+      run={(v, requestOptions) => aiContinuousImprovement(v, requestOptions)}
     />
   );
 }

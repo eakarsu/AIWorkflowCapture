@@ -18,29 +18,48 @@ function verifyPassword(password, stored) {
   });
 }
 
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body || {};
-    if (!email || !password) return res.status(400).json({ error: 'email and password are required' });
+async function signIn(email, password) {
+    if (!email || !password) return { status: 400, error: 'email and password are required' };
     const result = await pool.query(
       'SELECT id, email, password, name, role FROM users WHERE email = $1 LIMIT 1',
       [email]
     );
-    if (!result.rows.length) return res.status(401).json({ error: 'Invalid email or password' });
+    if (!result.rows.length) return { status: 401, error: 'Invalid email or password' };
     const account = result.rows[0];
     if (!SCRYPT_FORMAT.test(String(account.password || ''))) {
-      return res.status(503).json({ error: 'PASSWORD_MIGRATION_REQUIRED' });
+      return { status: 503, error: 'PASSWORD_MIGRATION_REQUIRED' };
     }
     if (!await verifyPassword(password, account.password)) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return { status: 401, error: 'Invalid email or password' };
     }
     const user = { id: account.id, email: account.email, name: account.name, role: account.role };
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
-    return res.json({ token, user });
+    return { token, user };
+}
+
+async function respondWithLogin(res, email, password) {
+  try {
+    const result = await signIn(email, password);
+    return result.status ? res.status(result.status).json({ error: result.error }) : res.json(result);
   } catch (error) {
     console.error('Login error:', error.message);
     return res.status(500).json({ error: 'Server error' });
   }
+}
+
+router.post('/login', (req, res) => {
+  const { email, password } = req.body || {};
+  return respondWithLogin(res, email, password);
+});
+
+// Development-only sign-in with the already provisioned demo account.
+// Credentials stay on the server and are checked against the existing user.
+router.post('/demo-login', (req, res) => {
+  if (process.env.NODE_ENV === 'production') return res.status(404).json({ error: 'Route not found' });
+  const email = process.env.DEMO_EMAIL;
+  const password = process.env.DEMO_PASSWORD;
+  if (!email || !password) return res.status(503).json({ error: 'Demo account is not configured' });
+  return respondWithLogin(res, email, password);
 });
 
 router.get('/me', authenticateToken, async (req, res) => {

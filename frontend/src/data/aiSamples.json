@@ -1,0 +1,374 @@
+{
+  "capture-analyze": [
+    {
+      "label": "Coupa invoice submission",
+      "values": {
+        "trace_text": "STEP 1 click button Submit Invoice; STEP 2 type INV-2026-0481; STEP 3 select vendor Acme",
+        "app_name": "Coupa"
+      }
+    },
+    {
+      "label": "SAP Concur expense",
+      "values": {
+        "trace_text": "STEP 1 click New Report; STEP 2 type \"Q3 conference\"; STEP 3 upload receipt.pdf",
+        "app_name": "SAP Concur"
+      }
+    },
+    {
+      "label": "CMA CGM port booking",
+      "values": {
+        "trace_text": "STEP 1 search port LAX; STEP 2 click slot 2026-06-12; STEP 3 confirm",
+        "app_name": "CMA CGM"
+      }
+    }
+  ],
+  "replay-plan": [
+    {
+      "label": "Submit invoice INV-0482",
+      "values": {
+        "workflow_id": "submit-coupa-invoice",
+        "parameters_json": "{\"invoice_no\":\"INV-2026-0482\",\"amount\":\"4500.00\"}"
+      }
+    },
+    {
+      "label": "Expense for conf trip",
+      "values": {
+        "workflow_id": "sap-concur-expense",
+        "parameters_json": "{\"title\":\"Q3 conference\",\"amount\":\"1842.00\",\"date\":\"2026-09-12\"}"
+      }
+    },
+    {
+      "label": "Book LAX slot",
+      "values": {
+        "workflow_id": "cma-cgm-port-booking",
+        "parameters_json": "{\"port\":\"LAX\",\"date\":\"2026-06-12\",\"container_count\":\"3\"}"
+      }
+    }
+  ],
+  "self-heal": [
+    {
+      "label": "Submit button moved",
+      "values": {
+        "failed_step": "Click Submit Invoice",
+        "screenshot_text": "Header: Submit Invoice. Page contains button \"Save Draft\" and a green pill \"Submit\"",
+        "last_known_selector": "button#submit-7"
+      }
+    },
+    {
+      "label": "New Report renamed",
+      "values": {
+        "failed_step": "Click New Report",
+        "screenshot_text": "Top bar: Reports v2. Big blue \"Create New Report\" button.",
+        "last_known_selector": ".btn-primary"
+      }
+    },
+    {
+      "label": "Captcha interrupting",
+      "values": {
+        "failed_step": "Confirm booking",
+        "screenshot_text": "Modal: Verify you are human. reCAPTCHA visible.",
+        "last_known_selector": ".booking-action-primary"
+      }
+    }
+  ],
+  "intent-classifier": [
+    {
+      "label": "Submit invoice phrase",
+      "values": {
+        "utterance": "I need to submit invoice 0482 for Acme for $4500",
+        "allowed_intents": "submit_invoice, file_expense, book_port"
+      }
+    },
+    {
+      "label": "Expense for conference",
+      "values": {
+        "utterance": "File expense for last week conference, $1842",
+        "allowed_intents": "submit_invoice, file_expense, book_port"
+      }
+    },
+    {
+      "label": "Book port slot",
+      "values": {
+        "utterance": "Book 3 containers at LAX for June 12",
+        "allowed_intents": "submit_invoice, file_expense, book_port"
+      }
+    }
+  ],
+  "parameter-suggester": [
+    {
+      "label": "Coupa partial fill",
+      "values": {
+        "workflow_name": "Submit Coupa Invoice",
+        "partial_input": "invoice for Acme, last month"
+      }
+    },
+    {
+      "label": "Concur with attachment",
+      "values": {
+        "workflow_name": "SAP Concur Expense",
+        "partial_input": "Q3 customer trip"
+      }
+    },
+    {
+      "label": "Port partial",
+      "values": {
+        "workflow_name": "Port Booking",
+        "partial_input": "3 boxes outbound to LAX"
+      }
+    }
+  ],
+  "branch-detector": [
+    {
+      "label": "Captcha branch",
+      "values": {
+        "workflow_name": "Port Booking",
+        "observation": "In 4% of runs, a captcha modal appears between step 5 and 6."
+      }
+    },
+    {
+      "label": "Approval branch",
+      "values": {
+        "workflow_name": "Submit Coupa Invoice",
+        "observation": "When amount > $5000, a second approval step is added."
+      }
+    },
+    {
+      "label": "Receipt branch",
+      "values": {
+        "workflow_name": "SAP Concur Expense",
+        "observation": "Some expense categories require an itemization step."
+      }
+    }
+  ],
+  "exception-resolver": [
+    {
+      "label": "Captcha",
+      "values": {
+        "workflow_name": "Port Booking",
+        "exception_kind": "captcha",
+        "context": "reCAPTCHA every 3-4 runs."
+      }
+    },
+    {
+      "label": "Selector drift",
+      "values": {
+        "workflow_name": "Submit Coupa Invoice",
+        "exception_kind": "selector_drift",
+        "context": "Coupa shipped UI v6."
+      }
+    },
+    {
+      "label": "Auth expired",
+      "values": {
+        "workflow_name": "SAP Concur Expense",
+        "exception_kind": "auth",
+        "context": "Session expired mid-run."
+      }
+    }
+  ],
+  "workflow-merger": [
+    {
+      "label": "Invoice variants",
+      "values": {
+        "workflow_a": "Submit Coupa Invoice",
+        "workflow_b": "Submit Coupa Credit Memo",
+        "similarity_hint": "Both vendor lookup."
+      }
+    },
+    {
+      "label": "Expense vs reimb",
+      "values": {
+        "workflow_a": "SAP Concur Expense",
+        "workflow_b": "SAP Concur Reimbursement",
+        "similarity_hint": "Reimbursement is subset."
+      }
+    },
+    {
+      "label": "Port variants",
+      "values": {
+        "workflow_a": "CMA CGM Port Booking",
+        "workflow_b": "Maersk Port Booking",
+        "similarity_hint": "Same intent."
+      }
+    }
+  ],
+  "demo-to-sop": [
+    {
+      "label": "Coupa invoice SOP",
+      "values": {
+        "workflow_name": "Submit Coupa Invoice",
+        "steps_text": "1 click Submit Invoice; 2 type INV-2026-0481; 3 select Acme; 4 attach receipt.pdf; 5 click Confirm",
+        "screenshots": "intro.png,form.png,confirm.png"
+      }
+    },
+    {
+      "label": "Concur SOP",
+      "values": {
+        "workflow_name": "SAP Concur Expense",
+        "steps_text": "1 New Report; 2 type Q3 trip; 3 upload receipt; 4 submit",
+        "screenshots": "new.png,form.png"
+      }
+    },
+    {
+      "label": "Port SOP",
+      "values": {
+        "workflow_name": "CMA CGM Port Booking",
+        "steps_text": "1 search LAX; 2 pick 2026-06-12; 3 confirm 3 containers",
+        "screenshots": "search.png,confirm.png"
+      }
+    }
+  ],
+  "action-classifier": [
+    {
+      "label": "Coupa events",
+      "values": {
+        "events_text": "seq=1 click button text='Submit Invoice'; seq=2 keypress input#invno 'INV-2026-0481'; seq=3 select #vendor 'Acme'; seq=4 file-drop receipt.pdf; seq=5 click 'Confirm'",
+        "app_name": "Coupa"
+      }
+    },
+    {
+      "label": "Concur events",
+      "values": {
+        "events_text": "seq=1 click 'New Report'; seq=2 type input#title 'Q3 conference'; seq=3 click 'Upload Receipt'; seq=4 file receipt.pdf",
+        "app_name": "SAP Concur"
+      }
+    },
+    {
+      "label": "Port events",
+      "values": {
+        "events_text": "seq=1 type search 'LAX'; seq=2 click date 2026-06-12; seq=3 click slot; seq=4 click confirm",
+        "app_name": "CMA CGM"
+      }
+    }
+  ],
+  "automation-script-gen": [
+    {
+      "label": "Playwright Coupa",
+      "values": {
+        "target": "playwright",
+        "language": "javascript",
+        "workflow_name": "Submit Coupa Invoice",
+        "steps_text": "1 click Submit Invoice; 2 type INV-2026-0481; 3 select Acme; 4 confirm",
+        "base_url": "https://coupa.example.com"
+      }
+    },
+    {
+      "label": "Selenium Concur",
+      "values": {
+        "target": "selenium",
+        "language": "python",
+        "workflow_name": "SAP Concur Expense",
+        "steps_text": "1 New Report; 2 type Q3 trip; 3 submit",
+        "base_url": "https://concur.example.com"
+      }
+    },
+    {
+      "label": "Puppeteer Port",
+      "values": {
+        "target": "puppeteer",
+        "language": "javascript",
+        "workflow_name": "Port Booking",
+        "steps_text": "1 search LAX; 2 pick date; 3 confirm",
+        "base_url": "https://cmacgm.example.com"
+      }
+    }
+  ],
+  "gap-filler": [
+    {
+      "label": "Coupa gap",
+      "values": {
+        "workflow_name": "Submit Coupa Invoice",
+        "steps_text": "1 click Submit; 2 [page jumped to confirmation without recorded click]; 3 confirmation screen"
+      }
+    },
+    {
+      "label": "Concur gap",
+      "values": {
+        "workflow_name": "SAP Concur Expense",
+        "steps_text": "1 New Report; 2 [state: form open with title prefilled]; 3 submit"
+      }
+    },
+    {
+      "label": "Port gap",
+      "values": {
+        "workflow_name": "Port Booking",
+        "steps_text": "1 search LAX; 2 [no click recorded but date detail open]; 3 confirm"
+      }
+    }
+  ],
+  "narrate-step": [
+    {
+      "label": "Coupa step 2",
+      "values": {
+        "workflow_name": "Submit Coupa Invoice",
+        "step_no": 2,
+        "step_label": "Type invoice number INV-2026-0481",
+        "upcoming": "Select vendor Acme"
+      }
+    },
+    {
+      "label": "Concur step 1",
+      "values": {
+        "workflow_name": "SAP Concur Expense",
+        "step_no": 1,
+        "step_label": "Click New Report",
+        "upcoming": "Type Q3 conference title"
+      }
+    },
+    {
+      "label": "Port step 3",
+      "values": {
+        "workflow_name": "CMA CGM Port Booking",
+        "step_no": 3,
+        "step_label": "Confirm 3 containers",
+        "upcoming": "Receive booking ref"
+      }
+    }
+  ],
+  "dedup-workflows": [
+    {
+      "label": "Corpus dedup",
+      "values": {
+        "workflow_names": "Submit Coupa Invoice, Submit Coupa Credit Memo, SAP Concur Expense, SAP Concur Reimbursement, CMA CGM Port Booking, Maersk Port Booking",
+        "app_names": "Coupa, Coupa, SAP Concur, SAP Concur, CMA CGM, Maersk"
+      }
+    },
+    {
+      "label": "Just invoices",
+      "values": {
+        "workflow_names": "Coupa Invoice, Coupa Credit Memo, Coupa Refund",
+        "app_names": "Coupa, Coupa, Coupa"
+      }
+    },
+    {
+      "label": "Mixed",
+      "values": {
+        "workflow_names": "Port Booking LAX, Port Booking SHA, Expense Q3, Expense Q4",
+        "app_names": "CMA CGM, CMA CGM, Concur, Concur"
+      }
+    }
+  ],
+  "continuous-improvement": [
+    {
+      "label": "Last 30 days",
+      "values": {
+        "window": "30d",
+        "runs_text": "Submit Coupa Invoice: 18/20 success last 30d, 39/40 baseline; SAP Concur Expense: 12/20 success last 30d, 18/20 baseline; Port Booking: 9/10 last 30d, 14/15 baseline"
+      }
+    },
+    {
+      "label": "Last 7 days",
+      "values": {
+        "window": "7d",
+        "runs_text": "Submit Coupa Invoice 4/5; baseline 19/20; Port Booking 2/5; baseline 9/10"
+      }
+    },
+    {
+      "label": "Quarter",
+      "values": {
+        "window": "90d",
+        "runs_text": "Concur Expense 50/100; baseline 80/100; Coupa Invoice 92/100; baseline 90/100"
+      }
+    }
+  ]
+}

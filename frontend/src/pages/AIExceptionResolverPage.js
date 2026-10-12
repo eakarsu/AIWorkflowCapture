@@ -13,7 +13,7 @@ export default function AIExceptionResolverPage() {
         { key: 'exception_kind', label: 'Kind', type: 'text', placeholder: '' },
         { key: 'context', label: 'Context', type: 'textarea', placeholder: '' }
       ]}
-      run={(v) => aiExceptionResolver(v)}
+      run={(v, requestOptions) => aiExceptionResolver(v, requestOptions)}
     />
   );
 }

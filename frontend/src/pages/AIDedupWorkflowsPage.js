@@ -12,7 +12,7 @@ export default function AIDedupWorkflowsPage() {
         { key: 'workflow_names', label: 'Workflow names (comma)', type: 'textarea' },
         { key: 'app_names', label: 'App names (comma, parallel)', type: 'textarea' },
       ]}
-      run={(v) => aiDedupWorkflows(v)}
+      run={(v, requestOptions) => aiDedupWorkflows(v, requestOptions)}
     />
   );
 }

@@ -13,7 +13,7 @@ export default function AISelfHealPage() {
         { key: 'screenshot_text', label: 'Screenshot Text Extract', type: 'textarea', placeholder: '' },
         { key: 'last_known_selector', label: 'Last Known Selector', type: 'text', placeholder: '' }
       ]}
-      run={(v) => aiSelfHeal(v)}
+      run={(v, requestOptions) => aiSelfHeal(v, requestOptions)}
     />
   );
 }
