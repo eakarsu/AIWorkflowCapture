@@ -44,6 +44,7 @@ import AuditLogPage from './pages/AuditLogPage';
 import RedactionEnginePage from './pages/RedactionEnginePage';
 import MarketplacePage from './pages/MarketplacePage';
 import RoleDashboardPage from './pages/RoleDashboardPage';
+import TasksFeaturePackPage from './pages/TasksFeaturePackPage';
 
 function RequireAuth({ children }) {
   const location = useLocation();
@@ -65,6 +66,7 @@ function Shell() {
 
             <Route path="/" element={<Dashboard />} />
             <Route path="/workflows" element={<WorkflowsPage />} />
+            <Route path="/tasks" element={<TasksFeaturePackPage />} />
             <Route path="/captured-steps" element={<CapturedStepsPage />} />
             <Route path="/replay-runs" element={<ReplayRunsPage />} />
             <Route path="/selector-library" element={<SelectorLibraryPage />} />

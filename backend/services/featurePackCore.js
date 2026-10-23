@@ -1,0 +1,12 @@
+// Deterministic feature-pack core. No provider calls, ever.
+const PRIORITY_WEIGHT={critical:4,high:3,medium:2,low:1};
+function normalizeTask(input={}){const title=String(input.title||'').trim();return {title,description:String(input.description||''),status:String(input.status||'todo'),priority:String(input.priority||'medium').toLowerCase(),assignee:String(input.assignee||''),category:String(input.category||'')};}
+function filterTasks(tasks,{search='',status='',priority=''}={}){const q=String(search||'').trim().toLowerCase();return tasks.filter(t=>{if(status&&t.status!==status)return false;if(priority&&t.priority!==priority)return false;if(!q)return true;return [t.title,t.description,t.assignee,t.category,t.status,t.priority].join(' ').toLowerCase().includes(q);});}
+function esc(v){const s=v===null||v===undefined?'':String(v);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
+function toCsv(tasks){const cols=['id','title','description','status','priority','assignee','category','createdAt','updatedAt'];return [cols.join(','),...tasks.map(t=>cols.map(c=>esc(t[c])).join(','))].join('\n')+'\n';}
+function counts(tasks){const byStatus={},byPriority={};for(const t of tasks){byStatus[t.status]=(byStatus[t.status]||0)+1;byPriority[t.priority]=(byPriority[t.priority]||0)+1;}const done=tasks.filter(t=>t.status==='done').length;const open=tasks.length-done;const highOpen=tasks.filter(t=>t.status!=='done'&&['high','critical'].includes(t.priority)).length;return {total:tasks.length,open,done,highPriorityOpen:highOpen,completionRate:tasks.length?done/tasks.length:0,byStatus,byPriority};}
+function priorityRanking(tasks){return tasks.map(t=>({id:t.id,title:t.title,status:t.status,priority:t.priority,assignee:t.assignee,score:(PRIORITY_WEIGHT[t.priority]||0)*(t.status==='done'?0:1)})).sort((a,b)=>b.score-a.score);}
+function riskSummary(tasks){const c=counts(tasks);return {...c,level:c.highPriorityOpen>=3?'high':c.highPriorityOpen>=1?'medium':'low'};}
+function workloadSummary(tasks){const map={};for(const t of tasks){const k=t.assignee||'(unassigned)';map[k]=map[k]||{assignee:k,total:0,open:0};map[k].total+=1;if(t.status!=='done')map[k].open+=1;}return Object.values(map).sort((a,b)=>b.open-a.open);}
+function fallback(feature,result){return {aiGenerated:false,providerCalled:false,source:'deterministic-fallback',label:'Deterministic fallback (no AI provider)',feature,result};}
+module.exports={normalizeTask,filterTasks,toCsv,counts,priorityRanking,riskSummary,workloadSummary,fallback};
